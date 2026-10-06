@@ -1,0 +1,65 @@
+{
+  "version": "6.2",
+  "screens": [
+    {
+      "id": "SERVICE_SELECTION",
+      "title": "DutyLaunch",
+      "terminal": true,
+      "data": {
+        "services": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "title": { "type": "string" },
+              "description": { "type": "string" }
+            }
+          },
+          "__example__": [
+            { "id": "ai_resume_builder", "title": "AI Resume Builder", "description": "Create a professional, ATS-friendly resume" },
+            { "id": "linkedin_optimization", "title": "LinkedIn Optimization", "description": "Improve your LinkedIn profile" },
+            { "id": "cover_letter_generator", "title": "Cover Letter Generator", "description": "Tailored cover letters" },
+            { "id": "interview_preparation", "title": "Interview Preparation", "description": "Practice and tips" },
+            { "id": "jobs_career_guidance", "title": "Jobs & Career Guidance", "description": "Opportunities and guidance" }
+          ]
+        },
+        "selected": {
+          "type": "array",
+          "items": { "type": "string" },
+          "__example__": []
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          { "type": "TextHeading", "text": "What can we help you with?" },
+          { "type": "TextBody", "text": "Select all the services you're interested in." },
+          {
+            "type": "Form",
+            "name": "service_form",
+            "children": [
+              {
+                "type": "CheckboxGroup",
+                "name": "services",
+                "label": "Services",
+                "required": true,
+                "min-selected-items": 1,
+                "data-source": "${data.services}",
+                "init-value": "${data.selected}"
+              },
+              {
+                "type": "Footer",
+                "label": "Continue",
+                "on-click-action": {
+                  "name": "complete",
+                  "payload": { "services": "${form.services}" }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
