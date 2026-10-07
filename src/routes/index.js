@@ -11,6 +11,9 @@ export function buildRoutes({ webhook, payment, api }) {
   // --- provider-facing ---
   r.get('/webhooks/whatsapp', webhookAuth, webhook.verify);
   r.post('/webhooks/whatsapp', webhookLimiter(), webhookAuth, wrap(webhook.handle));
+  // Same webhook with the secret in the path (MSG91's form does not allow "?" in URLs)
+  r.get('/webhooks/whatsapp/:secret', webhookAuth, webhook.verify);
+  r.post('/webhooks/whatsapp/:secret', webhookLimiter(), webhookAuth, wrap(webhook.handle));
   r.post('/events/payment', apiLimiter(300), paymentAuth, wrap(payment.handle));
 
   // --- internal / back-office (API key + rate limit applied per route, so unknown paths are a plain 404) ---

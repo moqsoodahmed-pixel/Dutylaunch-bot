@@ -72,7 +72,7 @@ test('client logs never contain the auth key', async () => {
   assert.ok(!lines.join('').includes('SECRET_KEY_123'));
 });
 
-test('whatsapp layer: text uses documented query params; interactive uses JSON body', async () => {
+test('whatsapp layer: text and interactive both use a JSON body', async () => {
   const seen = [];
   const c = mk(async (url, init) => { seen.push({ url: new URL(String(url)), body: init.body ? JSON.parse(init.body) : null }); return resp(200, { status: 'success', message_uuid: 'm1' }); });
   const wa = createWhatsApp(c);

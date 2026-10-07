@@ -58,19 +58,65 @@ function fromMetaStatus(s) {
   };
 }
 
+/**
+ * MSG91 "Custom Webhook" sends a flat JSON object built from a template like
+ *   { "customerNumber": "{{customerNumber}}", "contentType": "{{contentType}}",
+ *     "text": "{{text}}", "interactive": "{{interactive}}", "button": "{{button}}", ... }
+ * Because every value sits inside quotes, nested objects (interactive, button,
+ * messages) arrive as JSON *strings*, and fields that don't apply arrive as ""
+ * or as the literal placeholder "{{field}}". Verified against live MSG91 traffic.
+ */
+function blank(v) {
+  if (v === undefined || v === null) return true;
+  if (typeof v !== 'string') return false;
+  const t = v.trim();
+  return t === '' || t === 'null' || t === 'undefined' || /^\{\{.*\}\}$/.test(t);
+}
+
+/** Returns an object for JSON strings, the value itself otherwise, null for blanks. */
+function parseMaybeJson(v) {
+  if (blank(v)) return null;
+  if (typeof v !== 'string') return v;
+  const t = v.trim();
+  if (!/^[\[{]/.test(t)) return t;
+  try { return JSON.parse(t); } catch { return t; }
+}
+
 function fromMsg91Envelope(b) {
-  const from = b.customerNumber || b.sender || b.from;
+  const from = [b.customerNumber, b.sender, b.from].find((v) => !blank(v));
   if (!from) return null;
-  let contents = b.contents ?? b.content ?? null;
-  if (typeof contents === 'string') { try { contents = JSON.parse(contents); } catch { /* keep string */ } }
-  const probe = { ...(contents && typeof contents === 'object' ? contents : {}), ...(b.interactive ? { interactive: b.interactive } : {}) };
-  const kind = String(b.contentType || b.type || '').toLowerCase();
-  let c = classify({ type: kind || 'text', text: { body: b.text }, ...probe });
-  if (c.type === 'text' && !c.text) c = { type: 'text', text: cleanText(b.text, 1000) };
-  const messageId = b.uuid || b.messageId || b.message_id || b.id || null;
+
+  // MSG91 may also forward the raw Meta message(s) in "messages"
+  let raw = parseMaybeJson(b.messages);
+  if (Array.isArray(raw)) raw = raw[0];
+  if (!raw || typeof raw !== 'object') raw = null;
+
+  let contents = parseMaybeJson(b.contents ?? b.content);
+  const interactive = parseMaybeJson(b.interactive) ?? raw?.interactive ?? null;
+  const button = parseMaybeJson(b.button) ?? raw?.button ?? null;
+  const textValue = blank(b.text) ? (raw?.text?.body ?? '') : parseMaybeJson(b.text);
+  const textBody = typeof textValue === 'object' && textValue !== null ? (textValue.body ?? '') : textValue;
+
+  const probe = {
+    ...(contents && typeof contents === 'object' ? contents : {}),
+    ...(interactive && typeof interactive === 'object' ? { interactive } : {}),
+    ...(button && typeof button === 'object' ? { button } : {})
+  };
+  const kind = String((!blank(b.contentType) && b.contentType) || (!blank(b.type) && b.type) || raw?.type || 'text').toLowerCase();
+
+  let c = classify({ type: kind, text: { body: textBody }, ...probe });
+  // Quick-reply button sent only as a title string
+  if (c.type !== 'button' && kind === 'button' && typeof button === 'string') {
+    c = { type: 'button', replyId: button, replyTitle: cleanText(button, 80) };
+  }
+  if (c.type === 'text' && !c.text) c = { type: 'text', text: cleanText(textBody, 1000) };
+
+  const messageId = [b.uuid, b.messageId, b.message_id, b.id, raw?.id].find((v) => !blank(v)) || null;
   return {
-    kind: 'message', messageId, from: String(from), name: cleanText(b.customerName, 80) || null,
-    timestamp: toDate(b.ts || b.timestamp), referral: b.referral || null, ...c,
+    kind: 'message', messageId, from: String(from).replace(/\D/g, ''),
+    name: blank(b.customerName) ? null : (cleanText(b.customerName, 80) || null),
+    timestamp: toDate(blank(b.ts) ? (blank(b.timestamp) ? null : b.timestamp) : b.ts),
+    referral: b.referral || null, ...c,
     eventId: messageId ? String(messageId) : `h_${sha256(b).slice(0, 32)}`
   };
 }

@@ -20,11 +20,15 @@ export function createWhatsApp(client, { defaultLanguage = 'en', namespace = '' 
   };
 
   return {
-    /** Session text. MSG91 documents this endpoint with URL query parameters (not a JSON body). */
+    /**
+     * Session text. Sent as a JSON body, the same shape as interactive messages — this is the
+     * format verified against live MSG91 traffic. (URL query parameters break on long or
+     * multi-line text and are not what MSG91 accepts for this endpoint in practice.)
+     */
     async sendText(to, text) {
       const resp = await client.request({
         path: OUTBOUND, action: 'send_text',
-        query: { ...base(to), content_type: 'text', text }
+        body: { ...base(to), content_type: 'text', text }
       });
       return { providerMessageId: extractMessageId(resp) };
     },

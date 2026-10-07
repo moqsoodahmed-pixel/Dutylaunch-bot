@@ -29,7 +29,9 @@ export function webhookAuth(req, res, next) {
     return next();
   }
   if (msg91.webhookSecret) {
-    const given = req.headers['x-webhook-secret'] || req.query.secret;
+    // Accepted in three places: path (/webhooks/whatsapp/<secret>), header, or ?secret= query.
+    // The path form exists because MSG91's webhook form rejects URLs containing "?".
+    const given = req.params?.secret || req.headers['x-webhook-secret'] || req.query.secret;
     if (!safeEqual(msg91.webhookSecret, given)) return deny(res, 401, 'unauthorized');
   }
   if (msg91.webhookHmacSecret) {
