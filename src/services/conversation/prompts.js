@@ -22,18 +22,31 @@ export const welcomeSpec = (body) => buttons(body, [
   { id: 'welcome_other', title: 'Services & Support' }
 ]);
 
+/**
+ * Main menu — the 9 options from spec section 4, in the spec's order, each going straight to its flow.
+ * A 10th row keeps the multi-select ("pick several services, answer shared questions once").
+ * WhatsApp lists allow max 10 rows, so START OVER is available by typing it (Appendix B style) rather than as a row.
+ */
+export const MENU_SERVICE_ROWS = [
+  { id: 'menu_svc:ai_resume_builder', title: 'AI Resume Builder', description: 'Fresher, experienced, career change or improve your resume', serviceId: 'ai_resume_builder' },
+  { id: 'menu_svc:linkedin_optimization', title: 'LinkedIn Optimization', description: 'Headline, About section, experience or full profile', serviceId: 'linkedin_optimization' },
+  { id: 'menu_svc:cover_letter_generator', title: 'Cover Letter Generator', description: 'New letter, tailor to a job post, or improve one', serviceId: 'cover_letter_generator' },
+  { id: 'menu_svc:interview_preparation', title: 'Interview Preparation', description: 'HR, technical, managerial, behavioral or mock interview', serviceId: 'interview_preparation' },
+  { id: 'menu_svc:jobs_career_guidance', title: 'Jobs & Career Guidance', description: 'India jobs, UAE, courses/upskilling, career guidance', serviceId: 'jobs_career_guidance' }
+];
+
 export const mainMenuSpec = () => list('What would you like help with?', [
   {
     title: 'DutyLaunch',
     rows: [
-      { id: 'menu_select_services', title: 'Choose Career Services', description: 'Pick one or more: resume, LinkedIn, cover letter, interview, jobs' },
+      ...MENU_SERVICE_ROWS.map(({ id, title, description }) => ({ id, title, description })),
       { id: 'menu_pricing', title: 'Plans & Pricing', description: 'Approved plans and checkout details' },
-      { id: 'menu_order', title: 'Existing Order / Payment', description: 'Activation, payment, refund or account issues' },
-      { id: 'menu_partnership', title: 'Partnership Enquiry', description: 'Employer / Institute Partnership' },
-      { id: 'cmd_human', title: 'Talk to a Human', description: 'Create a support ticket' }
+      { id: 'menu_order', title: 'Existing Order / Payment', description: 'Activation, payment, refund, account or tool issue' },
+      { id: 'menu_partnership', title: 'Partnership', description: 'Employer / Institute: hiring, EdTech, training, recruiting' },
+      { id: 'cmd_human', title: 'Talk to a Human', description: 'Create a ticket and reach our team' },
+      { id: 'menu_select_services', title: 'Choose Multiple Services', description: 'Pick several career services at once' }
     ]
-  },
-  navSection(NAV.startOver)
+  }
 ], { button: 'Main menu', header: 'DutyLaunch' });
 
 export const INTROS = {

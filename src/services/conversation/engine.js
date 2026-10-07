@@ -15,7 +15,7 @@ import { parseCommand } from './commands.js';
 import {
   text, buttons, list, NAV, navSection, welcomeText, welcomeBackText, welcomeSpec, mainMenuSpec, INTROS, PRICING_INTRO,
   ORDER_INTRO, PARTNERSHIP_INTRO, HANDOFF_INTRO, SECURITY_NOTE, ORDER_ISSUES, PARTNERSHIP_TYPES, HANDOFF_CATEGORIES,
-  PRICING_OPTIONS, ticketAckText, formatPricing
+  PRICING_OPTIONS, ticketAckText, formatPricing, MENU_SERVICE_ROWS
 } from './prompts.js';
 import {
   QUESTIONS, buildCareerQueue, buildOrderQueue, buildPartnershipQueue, seek, renderQuestion, optionTitle, optionReplyId
@@ -121,12 +121,16 @@ export function createEngine({ messenger, support, analytics, notifier, logger =
         if (id === 'welcome_other') { await track(ctx, 'menu_selection', { meta: { choice: 'welcome_other' } }); return enter(ctx, S.MAIN_MENU); }
         return fallback(ctx);
 
-      case S.MAIN_MENU:
+      case S.MAIN_MENU: {
+        // Spec section 4: each career service goes straight to its own flow
+        const svcRow = MENU_SERVICE_ROWS.find((r) => r.id === id);
+        if (svcRow) { await track(ctx, 'menu_selection', { serviceId: svcRow.serviceId, meta: { choice: 'main_menu' } }); return startCareer(ctx, [svcRow.serviceId]); }
         if (id === 'menu_select_services') { await track(ctx, 'menu_selection', { meta: { choice: 'select_services' } }); return enter(ctx, S.SERVICE_SELECTION); }
         if (id === 'menu_pricing') { await track(ctx, 'menu_selection', { serviceId: 'plans_pricing' }); return enter(ctx, S.PRICING_MENU); }
         if (id === 'menu_order') { await track(ctx, 'menu_selection', { serviceId: 'existing_order_payment' }); return enter(ctx, S.ORDER_ISSUE_TYPE); }
         if (id === 'menu_partnership') { await track(ctx, 'menu_selection', { serviceId: 'partnership' }); return enter(ctx, S.PARTNERSHIP_TYPE); }
         return fallback(ctx);
+      }
 
       case S.SERVICE_SELECTION: return handleServiceSelection(ctx);
 
